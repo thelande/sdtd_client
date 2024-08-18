@@ -102,6 +102,10 @@ func (c *SDTDClient) GetHeaders() http.Header {
 
 // Make a request against the API.
 func (c *SDTDClient) Do(method string, path string) ([]byte, error) {
+	if !c.allocsEnabled {
+		return nil, ErrAllocsModNotInstalled
+	}
+
 	headers := c.GetHeaders()
 
 	url, err := url.JoinPath(c.Host, path)
@@ -196,21 +200,6 @@ func (c *SDTDClient) GetUserStatus() (*UserStatusResponse, error) {
 func (c *SDTDClient) GetOnlinePlayers() (*PlayersResponse, error) {
 	path := "/api/player"
 	players := PlayersResponse{}
-	err := Get(c, path, &players)
-	if err != nil {
-		return nil, err
-	}
-	return &players, nil
-}
-
-// Returns all players known to the server. Requires Alloc's Server Fixes Mod.
-func (c *SDTDClient) GetAllPlayersM() (*PlayersResponseM, error) {
-	path := "/api/getplayerlist"
-	players := PlayersResponseM{}
-	if !c.allocsEnabled {
-		return &players, nil
-	}
-
 	err := Get(c, path, &players)
 	if err != nil {
 		return nil, err

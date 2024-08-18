@@ -18,10 +18,11 @@ package sdtdclient
 import "errors"
 
 var (
-	ErrNon2XXResponse    = errors.New("received non 2XX status code")
-	ErrNoHostSet         = errors.New("host not set")
-	ErrInvalidHostScheme = errors.New("the host scheme is invalid, must be http or https")
-	ErrNilAuth           = errors.New("cannot use nil Auth")
+	ErrNon2XXResponse        = errors.New("received non 2XX status code")
+	ErrNoHostSet             = errors.New("host not set")
+	ErrInvalidHostScheme     = errors.New("the host scheme is invalid, must be http or https")
+	ErrNilAuth               = errors.New("cannot use nil Auth")
+	ErrAllocsModNotInstalled = errors.New("alloc's server fixes not installed")
 )
 
 type BaseResponse struct {
