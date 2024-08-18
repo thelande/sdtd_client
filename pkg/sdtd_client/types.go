@@ -149,10 +149,31 @@ type PlayersResponse struct {
 	Data PlayersData `json:"data"`
 }
 
+type LogEntry struct {
+	ID       int    `json:"id"`      // Consecutive ID/number of this log line
+	Msg      string `json:"msg"`     // The log message
+	Type     string `json:"type"`    // Severity type (Error, Assert, Warning, Log, Exception)
+	Trace    string `json:"trace"`   // Stacktrace if entry is an Exception
+	IsoTime  string `json:"isotime"` // Date/time of the log entry
+	UptimeMs string `json:"uptime"`  // Time since server was started in milliseconds
+}
+
+type LogData struct {
+	Entries   []LogEntry `json:"entries"`
+	FirstLine int        `json:"firstLine"` // Number of first line retrieved
+	LastLine  int        `json:"lastLine"`  // Number of next line to retrieve to follow up without missing entries
+}
+
+type LogResponse struct {
+	BaseResponse
+	Data LogData `json:"data"`
+}
+
 type Response interface {
 	ServerInfoResponse |
 		UserStatusResponse |
 		ServerStatsResponse |
 		PlayersResponse |
-		PlayersResponseM
+		PlayersResponseM |
+		LogResponse
 }

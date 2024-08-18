@@ -19,6 +19,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -44,8 +45,8 @@ type SDTDClient struct {
 
 // Perform a GET request against the API and return the populated response
 // struct.
-func Get[R Response](c *SDTDClient, path string, resp *R) error {
-	body, err := c.Do("GET", path)
+func Get[R Response](c *SDTDClient, path string, resp *R, params *url.Values) error {
+	body, err := c.Do("GET", path, params)
 	if err != nil {
 		return err
 	}
@@ -62,11 +63,11 @@ func Get[R Response](c *SDTDClient, path string, resp *R) error {
 
 // Perform a GET request against the Alloc's Server Fixes API and return the
 // populated response struct.
-func GetM[R Response](c *SDTDClient, path string, resp *R) error {
+func GetM[R Response](c *SDTDClient, path string, resp *R, params *url.Values) error {
 	if !c.allocsEnabled {
 		return ErrAllocsModNotInstalled
 	}
-	return Get(c, path, resp)
+	return Get(c, path, resp, params)
 }
 
 func NewSDTDClient(host string, auth *SDTDAuth, sslVerify bool, logger *log.Logger) (*SDTDClient, error) {
@@ -110,27 +111,36 @@ func (c *SDTDClient) GetHeaders() http.Header {
 }
 
 // Make a request against the API.
-func (c *SDTDClient) Do(method string, path string) ([]byte, error) {
+func (c *SDTDClient) Do(method string, path string, params *url.Values) ([]byte, error) {
 	headers := c.GetHeaders()
 
-	url, err := url.JoinPath(c.Host, path)
+	fullPath, err := url.JoinPath(c.Host, path)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequest(method, url, nil)
+	baseUrl, err := url.Parse(fullPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		baseUrl.RawQuery = params.Encode()
+	}
+
+	req, err := http.NewRequest(method, baseUrl.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header = headers
 
-	level.Debug(*c.logger).Log("url", url, "method", method)
+	level.Debug(*c.logger).Log("url", baseUrl.String(), "method", method)
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
-	level.Debug(*c.logger).Log("url", url, "method", method, "statusCode", resp.StatusCode)
+	level.Debug(*c.logger).Log("url", baseUrl.String(), "method", method, "statusCode", resp.StatusCode)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		level.Warn(*c.logger).Log("status", resp.Status, "statusCode", resp.StatusCode)
 		return nil, ErrNon2XXResponse
@@ -155,7 +165,7 @@ func (c *SDTDClient) Connect() error {
 	level.Debug(*c.logger).Log("msg", "Server responded, checking for Alloc's Server Fixes APIs")
 
 	path := "/api/getstats"
-	err := Get(c, path, &ServerStatsResponse{})
+	err := Get(c, path, &ServerStatsResponse{}, nil)
 	if err != nil && !errors.Is(err, ErrNon2XXResponse) {
 		return err
 	} else if err != nil {
@@ -173,7 +183,7 @@ func (c *SDTDClient) Connect() error {
 func (c *SDTDClient) GetServerStats() (*ServerStatsResponse, error) {
 	path := "/api/serverstats"
 	status := ServerStatsResponse{}
-	err := Get(c, path, &status)
+	err := Get(c, path, &status, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +194,7 @@ func (c *SDTDClient) GetServerStats() (*ServerStatsResponse, error) {
 func (c *SDTDClient) GetServerInfo() (*ServerInfoResponse, error) {
 	path := "/api/serverinfo"
 	status := ServerInfoResponse{}
-	err := Get(c, path, &status)
+	err := Get(c, path, &status, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +204,7 @@ func (c *SDTDClient) GetServerInfo() (*ServerInfoResponse, error) {
 func (c *SDTDClient) GetUserStatus() (*UserStatusResponse, error) {
 	path := "userstatus"
 	status := UserStatusResponse{}
-	err := Get(c, path, &status)
+	err := Get(c, path, &status, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -205,9 +215,35 @@ func (c *SDTDClient) GetUserStatus() (*UserStatusResponse, error) {
 func (c *SDTDClient) GetOnlinePlayers() (*PlayersResponse, error) {
 	path := "/api/player"
 	players := PlayersResponse{}
-	err := Get(c, path, &players)
+	err := Get(c, path, &players, nil)
 	if err != nil {
 		return nil, err
 	}
 	return &players, nil
+}
+
+// Get an amount of lines from the server log
+//
+// count is the number of lines to fetch. If negative fetches count lines from
+// the firstLine. Defaults to 50.
+//
+// firstLine is the first line number to fetch. Defaults to the oldest stored
+// log line if count is positive. Defaults to the most recent log line if count
+// is negative.
+func (c *SDTDClient) GetLog(count *int, firstLine *int) (*LogResponse, error) {
+	path := "/api/log"
+	params := url.Values{}
+	if count != nil {
+		params.Add("count", fmt.Sprintf("%v", *count))
+	}
+	if firstLine != nil {
+		params.Add("firstLine", fmt.Sprintf("%v", *firstLine))
+	}
+
+	log := LogResponse{}
+	err := Get(c, path, &log, &params)
+	if err != nil {
+		return nil, err
+	}
+	return &log, nil
 }

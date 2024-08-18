@@ -15,15 +15,20 @@ limitations under the License.
 */
 package sdtdclient
 
-// Receivers for Alloc's Server Fixes API endpoints.
+import "fmt"
 
-// Returns all players known to the server. Requires Alloc's Server Fixes Mod.
-func (c *SDTDClient) GetAllPlayersM() (*PlayersResponseM, error) {
-	path := "/api/getplayerlist"
-	players := PlayersResponseM{}
-	err := GetM(c, path, &players, nil)
-	if err != nil {
-		return nil, err
-	}
-	return &players, nil
+func SecondsToDaysHoursMinutesSeconds(playtime int) string {
+	var days, hours, minutes, seconds int
+	seconds = playtime
+
+	days = seconds / 86400
+	seconds -= (days * 86400)
+
+	hours = seconds / 3600
+	seconds -= (hours * 3600)
+
+	minutes = seconds / 60
+	seconds -= (minutes * 60)
+
+	return fmt.Sprintf("%d:%02d:%02d:%02d", days, hours, minutes, seconds)
 }
