@@ -70,8 +70,10 @@ to list offline players (requires Alloc's Server Fixes Mod).`,
 		} else {
 			resp, err := Client.GetAllPlayersM()
 			if err != nil {
+				CheckAllocsMissing(err)
 				return err
 			}
+
 			for idx := range resp.Players {
 				player := &resp.Players[idx]
 				table = append(table, []string{

@@ -21,7 +21,7 @@ package sdtdclient
 func (c *SDTDClient) GetAllPlayersM() (*PlayersResponseM, error) {
 	path := "/api/getplayerlist"
 	players := PlayersResponseM{}
-	err := Get(c, path, &players)
+	err := GetM(c, path, &players)
 	if err != nil {
 		return nil, err
 	}

@@ -60,6 +60,15 @@ func Get[R Response](c *SDTDClient, path string, resp *R) error {
 	return nil
 }
 
+// Perform a GET request against the Alloc's Server Fixes API and return the
+// populated response struct.
+func GetM[R Response](c *SDTDClient, path string, resp *R) error {
+	if !c.allocsEnabled {
+		return ErrAllocsModNotInstalled
+	}
+	return Get(c, path, resp)
+}
+
 func NewSDTDClient(host string, auth *SDTDAuth, sslVerify bool, logger *log.Logger) (*SDTDClient, error) {
 	if len(host) == 0 {
 		return nil, ErrNoHostSet
@@ -102,10 +111,6 @@ func (c *SDTDClient) GetHeaders() http.Header {
 
 // Make a request against the API.
 func (c *SDTDClient) Do(method string, path string) ([]byte, error) {
-	if !c.allocsEnabled {
-		return nil, ErrAllocsModNotInstalled
-	}
-
 	headers := c.GetHeaders()
 
 	url, err := url.JoinPath(c.Host, path)
