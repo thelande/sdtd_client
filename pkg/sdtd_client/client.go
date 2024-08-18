@@ -16,6 +16,7 @@ limitations under the License.
 package sdtdclient
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -46,7 +47,7 @@ type SDTDClient struct {
 // Perform a GET request against the API and return the populated response
 // struct.
 func Get[R Response](c *SDTDClient, path string, resp *R, params *url.Values) error {
-	body, err := c.Do("GET", path, params)
+	body, err := c.Do("GET", path, params, nil)
 	if err != nil {
 		return err
 	}
@@ -56,6 +57,44 @@ func Get[R Response](c *SDTDClient, path string, resp *R, params *url.Values) er
 	err = json.Unmarshal(body, resp)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+// Perform a POST request against the API and return the populated response
+// struct.
+func Post[R Response](c *SDTDClient, path string, resp *R, params *url.Values, data []byte) error {
+	body, err := c.Do("POST", path, params, data)
+	if err != nil {
+		return err
+	}
+
+	// fmt.Println(string(body))
+
+	err = json.Unmarshal(body, resp)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Perform a DELETE request against the API and return the populated response
+// struct.
+func Delete[R Response](c *SDTDClient, path string, resp *R, params *url.Values, data []byte) error {
+	body, err := c.Do("DELETE", path, params, data)
+	if err != nil {
+		return err
+	}
+
+	// fmt.Println(string(body))
+
+	if body != nil && len(body) > 0 {
+		err = json.Unmarshal(body, resp)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -111,8 +150,11 @@ func (c *SDTDClient) GetHeaders() http.Header {
 }
 
 // Make a request against the API.
-func (c *SDTDClient) Do(method string, path string, params *url.Values) ([]byte, error) {
+func (c *SDTDClient) Do(method string, path string, params *url.Values, data []byte) ([]byte, error) {
 	headers := c.GetHeaders()
+	if method != "GET" && method != "DELETE" {
+		headers["Content-Type"] = []string{"application/json"}
+	}
 
 	fullPath, err := url.JoinPath(c.Host, path)
 	if err != nil {
@@ -134,23 +176,26 @@ func (c *SDTDClient) Do(method string, path string, params *url.Values) ([]byte,
 	}
 	req.Header = headers
 
+	if data != nil {
+		req.Body = io.NopCloser(bytes.NewReader(data))
+	}
+
 	level.Debug(*c.logger).Log("url", baseUrl.String(), "method", method)
 	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	level.Debug(*c.logger).Log("url", baseUrl.String(), "method", method, "statusCode", resp.StatusCode)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		level.Warn(*c.logger).Log("status", resp.Status, "statusCode", resp.StatusCode)
+		level.Warn(*c.logger).Log("status", resp.Status, "statusCode", resp.StatusCode, "body", body)
 		return nil, ErrNon2XXResponse
-	}
-
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
 	}
 
 	return body, nil
@@ -257,4 +302,34 @@ func (c *SDTDClient) GetLog(count *int, firstLine *int) (*LogResponse, error) {
 		return nil, err
 	}
 	return &log, nil
+}
+
+// Fetch a list of all whitelisted users / groups.
+func (c *SDTDClient) GetWhitelist() error {
+	return nil
+}
+
+// Add a user to the whitelist.
+func (c *SDTDClient) AddWhitelistUser(id string, name string) error {
+	path := fmt.Sprintf("/api/whitelist/user/%v", id)
+	data := WhitelistRequestBody{name}
+	body, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	err = Post(c, path, &BaseResponse{}, nil, body)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Remove a user from the whitelist.
+func (c *SDTDClient) DeleteWhitelistUser(id string) error {
+	path := fmt.Sprintf("/api/whitelist/user/%v", id)
+	err := Delete(c, path, &BaseResponse{}, nil, nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }

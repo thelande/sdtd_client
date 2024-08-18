@@ -179,8 +179,18 @@ type LogResponse struct {
 	Data LogData `json:"data"`
 }
 
+type WhitelistUser struct {
+	Name   string `json:"name"`
+	UserID string `json:"userId"`
+}
+
+type WhitelistRequestBody struct {
+	Name string `json:"name"`
+}
+
 type Response interface {
-	ServerInfoResponse |
+	BaseResponse |
+		ServerInfoResponse |
 		UserStatusResponse |
 		ServerStatsResponse |
 		PlayersResponse |
