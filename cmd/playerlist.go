@@ -36,7 +36,7 @@ var listCmd = &cobra.Command{
 	Long: `List all players currently logged into the server. Use the -O flag
 to list offline players (requires Alloc's Server Fixes Mod).`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		offline := viper.GetBool("offline")
+		offline := viper.GetBool("players.offline")
 		stdFields := []string{
 			"Name",
 			"Entity ID",
@@ -58,7 +58,7 @@ to list offline players (requires Alloc's Server Fixes Mod).`,
 				player := &resp.Data.Players[idx]
 				table = append(table, []string{
 					player.Name,
-					player.EntityID,
+					fmt.Sprintf("%v", player.EntityID),
 					player.PlatformID,
 					fmt.Sprintf("%v", player.Online),
 					player.LastOnline,
@@ -98,5 +98,5 @@ to list offline players (requires Alloc's Server Fixes Mod).`,
 func init() {
 	playerCmd.AddCommand(listCmd)
 	listCmd.Flags().BoolP("offline", "O", false, "Include offline players.")
-	viper.BindPFlag("offline", listCmd.Flags().Lookup("offline"))
+	viper.BindPFlag("players.offline", listCmd.Flags().Lookup("offline"))
 }

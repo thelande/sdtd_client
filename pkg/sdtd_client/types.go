@@ -100,7 +100,7 @@ type BannedData struct {
 }
 
 type Player struct {
-	EntityID             string     `json:"entityId"`
+	EntityID             int        `json:"entityId"`
 	Name                 string     `json:"name"`
 	PlatformID           string     `json:"platformId"`
 	CrossPlatformID      string     `json:"crossplatformId"`
