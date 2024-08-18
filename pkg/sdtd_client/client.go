@@ -201,6 +201,17 @@ func (c *SDTDClient) GetServerInfo() (*ServerInfoResponse, error) {
 	return &status, nil
 }
 
+// Returns the game preferences.
+func (c *SDTDClient) GetGamePrefs() (*GamePrefsResponse, error) {
+	path := "/api/gameprefs"
+	status := GamePrefsResponse{}
+	err := Get(c, path, &status, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &status, nil
+}
+
 func (c *SDTDClient) GetUserStatus() (*UserStatusResponse, error) {
 	path := "userstatus"
 	status := UserStatusResponse{}

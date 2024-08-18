@@ -42,6 +42,16 @@ type ServerInfoResponse struct {
 	Data []ServerInfoData `json:"data"`
 }
 
+type GamePrefData struct {
+	ServerInfoData
+	Default any `json:"default"`
+}
+
+type GamePrefsResponse struct {
+	BaseResponse
+	Data []GamePrefData `json:"data"`
+}
+
 type AllowedVerbs struct {
 	Get    bool `json:"GET"`
 	Post   bool `json:"POST"`
@@ -175,5 +185,6 @@ type Response interface {
 		ServerStatsResponse |
 		PlayersResponse |
 		PlayersResponseM |
-		LogResponse
+		LogResponse |
+		GamePrefsResponse
 }
