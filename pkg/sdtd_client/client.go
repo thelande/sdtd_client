@@ -90,7 +90,7 @@ func Delete[R Response](c *SDTDClient, path string, resp *R, params *url.Values,
 
 	// fmt.Println(string(body))
 
-	if body != nil && len(body) > 0 {
+	if len(body) > 0 {
 		err = json.Unmarshal(body, resp)
 		if err != nil {
 			return err
