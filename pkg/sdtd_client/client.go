@@ -179,7 +179,7 @@ func (c *SDTDClient) Do(method string, path string, params *url.Values, data []b
 		req.Body = io.NopCloser(bytes.NewReader(data))
 	}
 
-	log.Debug("url", baseUrl.String(), "method", method)
+	log.Debug("making request", "url", baseUrl.String(), "method", method)
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -191,9 +191,9 @@ func (c *SDTDClient) Do(method string, path string, params *url.Values, data []b
 		return nil, err
 	}
 
-	log.Debug("url", baseUrl.String(), "method", method, "statusCode", resp.StatusCode)
+	log.Debug("got response", "url", baseUrl.String(), "method", method, "statusCode", resp.StatusCode)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		log.Warn("status", resp.Status, "statusCode", resp.StatusCode, "body", body)
+		log.Warn("non-200 response", "status", resp.Status, "statusCode", resp.StatusCode, "body", body)
 		return nil, ErrNon2XXResponse
 	}
 
@@ -207,16 +207,16 @@ func (c *SDTDClient) Connect() error {
 		return err
 	}
 	log := *c.logger
-	log.Debug("msg", "Server responded, checking for Alloc's Server Fixes APIs")
+	log.Debug("Server responded, checking for Alloc's Server Fixes APIs")
 
 	path := "/api/getstats"
 	err := Get(c, path, &ServerStatsResponse{}, nil)
 	if err != nil && !errors.Is(err, ErrNon2XXResponse) {
 		return err
 	} else if err != nil {
-		log.Warn("msg", "Failed to detect Alloc's Server Fixes API")
+		log.Warn("Failed to detect Alloc's Server Fixes API")
 	} else {
-		log.Info("msg", "Alloc's Server Fixes detected")
+		log.Info("Alloc's Server Fixes detected")
 		c.allocsEnabled = true
 	}
 
