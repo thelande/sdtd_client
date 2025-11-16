@@ -22,11 +22,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
-
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 )
 
 type SDTDAuth struct {
@@ -41,7 +39,7 @@ type SDTDClient struct {
 	// Private fields
 	allocsEnabled bool
 	client        *http.Client
-	logger        *log.Logger
+	logger        *slog.Logger
 }
 
 // Perform a GET request against the API and return the populated response
@@ -109,7 +107,7 @@ func GetM[R Response](c *SDTDClient, path string, resp *R, params *url.Values) e
 	return Get(c, path, resp, params)
 }
 
-func NewSDTDClient(host string, auth *SDTDAuth, sslVerify bool, logger *log.Logger) (*SDTDClient, error) {
+func NewSDTDClient(host string, auth *SDTDAuth, sslVerify bool, logger *slog.Logger) (*SDTDClient, error) {
 	if len(host) == 0 {
 		return nil, ErrNoHostSet
 	}
@@ -151,6 +149,7 @@ func (c *SDTDClient) GetHeaders() http.Header {
 
 // Make a request against the API.
 func (c *SDTDClient) Do(method string, path string, params *url.Values, data []byte) ([]byte, error) {
+	log := *c.logger
 	headers := c.GetHeaders()
 	if method != "GET" && method != "DELETE" {
 		headers["Content-Type"] = []string{"application/json"}
@@ -180,7 +179,7 @@ func (c *SDTDClient) Do(method string, path string, params *url.Values, data []b
 		req.Body = io.NopCloser(bytes.NewReader(data))
 	}
 
-	level.Debug(*c.logger).Log("url", baseUrl.String(), "method", method)
+	log.Debug("url", baseUrl.String(), "method", method)
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -192,9 +191,9 @@ func (c *SDTDClient) Do(method string, path string, params *url.Values, data []b
 		return nil, err
 	}
 
-	level.Debug(*c.logger).Log("url", baseUrl.String(), "method", method, "statusCode", resp.StatusCode)
+	log.Debug("url", baseUrl.String(), "method", method, "statusCode", resp.StatusCode)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		level.Warn(*c.logger).Log("status", resp.Status, "statusCode", resp.StatusCode, "body", body)
+		log.Warn("status", resp.Status, "statusCode", resp.StatusCode, "body", body)
 		return nil, ErrNon2XXResponse
 	}
 
@@ -207,16 +206,17 @@ func (c *SDTDClient) Connect() error {
 	if _, err := c.GetServerInfo(); err != nil {
 		return err
 	}
-	level.Debug(*c.logger).Log("msg", "Server responded, checking for Alloc's Server Fixes APIs")
+	log := *c.logger
+	log.Debug("msg", "Server responded, checking for Alloc's Server Fixes APIs")
 
 	path := "/api/getstats"
 	err := Get(c, path, &ServerStatsResponse{}, nil)
 	if err != nil && !errors.Is(err, ErrNon2XXResponse) {
 		return err
 	} else if err != nil {
-		level.Warn(*c.logger).Log("msg", "Failed to detect Alloc's Server Fixes API")
+		log.Warn("msg", "Failed to detect Alloc's Server Fixes API")
 	} else {
-		level.Info(*c.logger).Log("msg", "Alloc's Server Fixes detected")
+		log.Info("msg", "Alloc's Server Fixes detected")
 		c.allocsEnabled = true
 	}
 
