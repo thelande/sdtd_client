@@ -38,6 +38,7 @@ type SDTDClient struct {
 
 	// Private fields
 	allocsEnabled bool
+	allocsChecked bool
 	client        *http.Client
 	logger        *slog.Logger
 }
@@ -124,6 +125,7 @@ func NewSDTDClient(host string, auth *SDTDAuth, sslVerify bool, logger *slog.Log
 	client := SDTDClient{
 		Host:          host,
 		Auth:          auth,
+		allocsChecked: false,
 		allocsEnabled: false,
 		client: &http.Client{
 			Transport: tr,
@@ -207,17 +209,22 @@ func (c *SDTDClient) Connect() error {
 		return err
 	}
 	log := *c.logger
-	log.Debug("Server responded, checking for Alloc's Server Fixes APIs")
 
-	path := "/api/getstats"
-	err := Get(c, path, &ServerStatsResponse{}, nil)
-	if err != nil && !errors.Is(err, ErrNon2XXResponse) {
-		return err
-	} else if err != nil {
-		log.Warn("Failed to detect Alloc's Server Fixes API")
-	} else {
-		log.Info("Alloc's Server Fixes detected")
-		c.allocsEnabled = true
+	// Only check for alloc's fixes if we haven't checked previously.
+	if !c.allocsChecked {
+		log.Debug("Server responded, checking for Alloc's Server Fixes APIs")
+
+		path := "/api/getstats"
+		err := Get(c, path, &ServerStatsResponse{}, nil)
+		if err != nil && !errors.Is(err, ErrNon2XXResponse) {
+			return err
+		} else if err != nil {
+			log.Warn("Failed to detect Alloc's Server Fixes API")
+		} else {
+			log.Info("Alloc's Server Fixes detected")
+			c.allocsEnabled = true
+		}
+		c.allocsChecked = true
 	}
 
 	return nil
