@@ -19,8 +19,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-kit/log"
-	"github.com/prometheus/common/promlog"
+	"github.com/prometheus/common/promslog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	sdtdclient "github.com/thelande/sdtd_client/pkg/sdtd_client"
@@ -32,7 +31,6 @@ const (
 
 var (
 	Client *sdtdclient.SDTDClient
-	logger log.Logger
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -40,7 +38,7 @@ var rootCmd = &cobra.Command{
 	Use:   "sdtd_client",
 	Short: "A 7 Days to Die Webserver API client.",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		logger = promlog.New(&promlog.Config{})
+		logger := promslog.New(&promslog.Config{})
 		var err error
 
 		Client, err = sdtdclient.NewSDTDClient(
@@ -50,7 +48,7 @@ var rootCmd = &cobra.Command{
 				TokenSecret: viper.GetString("token-secret"),
 			},
 			true,
-			&logger,
+			logger,
 		)
 		if err != nil {
 			return err
