@@ -109,9 +109,9 @@ func init() {
 		fmt.Sprintf("The token secret to use [env: %s_TOKEN_SECRET]", envNamespace),
 	)
 
-	rootCmd.MarkFlagRequired("host")
-	rootCmd.MarkFlagRequired("token-name")
-	rootCmd.MarkFlagRequired("token-secret")
+	_ = rootCmd.MarkFlagRequired("host")
+	_ = rootCmd.MarkFlagRequired("token-name")
+	_ = rootCmd.MarkFlagRequired("token-secret")
 
 	viper.SetEnvPrefix(envNamespace)
 	viper.AutomaticEnv()

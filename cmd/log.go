@@ -64,7 +64,7 @@ var logCmd = &cobra.Command{
 			})
 		}
 
-		pterm.DefaultTable.WithBoxed().WithHasHeader().WithData(tableData).Render()
+		_ = pterm.DefaultTable.WithBoxed().WithHasHeader().WithData(tableData).Render()
 		return nil
 	},
 }
@@ -89,6 +89,6 @@ Defaults to the oldest stored log line if count is positive.
 Defaults to the most recent log line if count is negative`,
 	)
 
-	viper.BindPFlag("log.count", logCmd.Flags().Lookup("count"))
-	viper.BindPFlag("log.firstline", logCmd.Flags().Lookup("firstline"))
+	_ = viper.BindPFlag("log.count", logCmd.Flags().Lookup("count"))
+	_ = viper.BindPFlag("log.firstline", logCmd.Flags().Lookup("firstline"))
 }

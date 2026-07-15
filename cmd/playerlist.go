@@ -89,7 +89,7 @@ to list offline players (requires Alloc's Server Fixes Mod).`,
 			}
 		}
 
-		pterm.DefaultTable.WithBoxed().WithHasHeader().WithData(table).Render()
+		_ = pterm.DefaultTable.WithBoxed().WithHasHeader().WithData(table).Render()
 
 		return nil
 	},
@@ -98,5 +98,5 @@ to list offline players (requires Alloc's Server Fixes Mod).`,
 func init() {
 	playerCmd.AddCommand(listCmd)
 	listCmd.Flags().BoolP("offline", "O", false, "Include offline players.")
-	viper.BindPFlag("players.offline", listCmd.Flags().Lookup("offline"))
+	_ = viper.BindPFlag("players.offline", listCmd.Flags().Lookup("offline"))
 }

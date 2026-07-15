@@ -27,6 +27,11 @@ import (
 	"log/slog"
 )
 
+var (
+	canonicalTokenName = http.CanonicalHeaderKey("X-SDTD-API-TOKENNAME")
+	canonicalSecretKey = http.CanonicalHeaderKey("X-SDTD-API-SECRET")
+)
+
 func TestNewSDTDClient(t *testing.T) {
 	t.Run("returns error for empty host", func(t *testing.T) {
 		_, err := NewSDTDClient("", &SDTDAuth{
@@ -94,15 +99,15 @@ func TestGetHeaders(t *testing.T) {
 		t.Errorf("expected Accept=application/json, got %s", headers.Get("Accept"))
 	}
 	// Check using the exact key name as set in GetHeaders()
-	if len(headers["X-SDTD-API-TOKENNAME"]) == 0 {
-		t.Error("expected X-SDTD-API-TOKENNAME header to be set")
-	} else if headers["X-SDTD-API-TOKENNAME"][0] != "testToken" {
-		t.Errorf("expected X-SDTD-API-TOKENNAME=testToken, got %s", headers["X-SDTD-API-TOKENNAME"][0])
+	if len(headers[canonicalTokenName]) == 0 {
+		t.Error("expected x-sdtd-apitokenname header to be set")
+	} else if headers[canonicalTokenName][0] != "testToken" {
+		t.Errorf("expected x-sdtd-apitokenname=testToken, got %s", headers[canonicalTokenName][0])
 	}
-	if len(headers["X-SDTD-API-SECRET"]) == 0 {
-		t.Error("expected X-SDTD-API-SECRET header to be set")
-	} else if headers["X-SDTD-API-SECRET"][0] != "testSecret" {
-		t.Errorf("expected X-SDTD-API-SECRET=testSecret, got %s", headers["X-SDTD-API-SECRET"][0])
+	if len(headers[canonicalSecretKey]) == 0 {
+		t.Error("expected x-sdtd-api-secret header to be set")
+	} else if headers[canonicalSecretKey][0] != "testSecret" {
+		t.Errorf("expected x-sdtd-api-secret=testSecret, got %s", headers[canonicalSecretKey][0])
 	}
 }
 
@@ -127,7 +132,7 @@ func TestDo(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			callCount++
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"test": "value"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"test": "value"})
 		}))
 		defer server.Close()
 
@@ -156,7 +161,7 @@ func TestDo(t *testing.T) {
 				t.Errorf("expected POST body to contain test data, got %s", string(body))
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 		}))
 		defer server.Close()
 
@@ -180,7 +185,7 @@ func TestDo(t *testing.T) {
 				t.Errorf("expected DELETE method, got %s", r.Method)
 			}
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`[]`))
+			_, _ = w.Write([]byte(`[]`))
 		}))
 		defer server.Close()
 
@@ -201,7 +206,7 @@ func TestDo(t *testing.T) {
 	t.Run("handles non-2XX response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{"error": "not found"}`))
+			_, _ = w.Write([]byte(`{"error": "not found"}`))
 		}))
 		defer server.Close()
 
@@ -224,7 +229,7 @@ func TestGet(t *testing.T) {
 	t.Run("unmarshals JSON response into ServerInfoResponse", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"meta": map[string]any{"serverTime": "2024-01-01T00:00:00Z"},
 				"data": []map[string]any{{"name": "Test Server", "type": "string", "value": "test"}},
 			})
@@ -252,7 +257,7 @@ func TestGet(t *testing.T) {
 	t.Run("returns error on JSON unmarshal failure", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`invalid json{}`))
+			_, _ = w.Write([]byte(`invalid json{}`))
 		}))
 		defer server.Close()
 
@@ -276,7 +281,7 @@ func TestPost(t *testing.T) {
 	t.Run("unmarshals JSON response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{"meta": map[string]any{"serverTime": "2024-01-01T00:00:00Z"}})
+			_ = json.NewEncoder(w).Encode(map[string]any{"meta": map[string]any{"serverTime": "2024-01-01T00:00:00Z"}})
 		}))
 		defer server.Close()
 
@@ -300,7 +305,7 @@ func TestDelete(t *testing.T) {
 	t.Run("unmarshals JSON response when body is present", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"meta": {"serverTime": "2024-01-01T00:00:00Z"}}`))
+			_, _ = w.Write([]byte(`{"meta": {"serverTime": "2024-01-01T00:00:00Z"}}`))
 		}))
 		defer server.Close()
 
@@ -326,7 +331,7 @@ func TestDelete(t *testing.T) {
 	t.Run("returns nil on empty response", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`null`))
+			_, _ = w.Write([]byte(`null`))
 		}))
 		defer server.Close()
 
@@ -370,7 +375,7 @@ func TestConnect(t *testing.T) {
 			// First call is /api/serverinfo, second is /api/getstats
 			if r.URL.Path == "/api/getstats" {
 				w.Header().Set("Content-Type", "application/json")
-				json.NewEncoder(w).Encode(map[string]any{
+				_ = json.NewEncoder(w).Encode(map[string]any{
 					"meta": map[string]any{"serverTime": "2024-01-01T00:00:00Z"},
 					"data": map[string]any{
 						"gameTime": map[string]int{"days": 0, "hours": 0, "minutes": 0},
@@ -382,7 +387,7 @@ func TestConnect(t *testing.T) {
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"meta": map[string]any{"serverTime": "2024-01-01T00:00:00Z"},
 				"data": []map[string]any{{"name": "test", "type": "string", "value": "test"}},
 			})
@@ -412,7 +417,7 @@ func TestConnect(t *testing.T) {
 	t.Run("connects without allocs when API fails", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`not found`))
+			_, _ = w.Write([]byte(`not found`))
 		}))
 		defer server.Close()
 
@@ -438,7 +443,7 @@ func TestGetServerInfo(t *testing.T) {
 	t.Run("returns server info", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"meta": map[string]any{"serverTime": "2024-01-01T00:00:00Z"},
 				"data": []map[string]any{{"name": "Test Server", "type": "string", "value": "test"}},
 			})
@@ -467,7 +472,7 @@ func TestGetServerStats(t *testing.T) {
 	t.Run("returns server stats", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"meta": map[string]any{"serverTime": "2024-01-01T00:00:00Z"},
 				"data": map[string]any{
 					"gameTime": map[string]int{"days": 10, "hours": 5, "minutes": 30},
@@ -504,7 +509,7 @@ func TestGetGamePrefs(t *testing.T) {
 	t.Run("returns game preferences", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"meta": map[string]any{"serverTime": "2024-01-01T00:00:00Z"},
 				"data": []map[string]any{
 					{"name": "allowFlying", "type": "bool", "default": true, "value": false},
@@ -535,7 +540,7 @@ func TestGetUserStatus(t *testing.T) {
 	t.Run("returns user status", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"meta": map[string]any{"serverTime": "2024-01-01T00:00:00Z"},
 				"data": map[string]any{
 					"username":        "testuser",
@@ -574,7 +579,7 @@ func TestGetOnlinePlayers(t *testing.T) {
 	t.Run("returns online players", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"meta": map[string]any{"serverTime": "2024-01-01T00:00:00Z"},
 				"data": map[string]any{
 					"players": []map[string]any{
@@ -612,7 +617,7 @@ func TestGetLog(t *testing.T) {
 				t.Errorf("expected count=50, got %s", r.URL.Query().Get("count"))
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"meta": map[string]any{"serverTime": "2024-01-01T00:00:00Z"},
 				"data": map[string]any{
 					"entries": []map[string]any{
@@ -649,7 +654,7 @@ func TestGetLog(t *testing.T) {
 				t.Errorf("expected no query params, got %s", r.URL.RawQuery)
 			}
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(map[string]any{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"meta": map[string]any{"serverTime": "2024-01-01T00:00:00Z"},
 				"data": map[string]any{
 					"entries":   []map[string]any{},
@@ -691,10 +696,10 @@ func TestAddWhitelistUser(t *testing.T) {
 			body, _ := io.ReadAll(r.Body)
 			receivedID = strings.Split(r.URL.Path, "/")[4]
 			var data map[string]string
-			json.Unmarshal(body, &data)
+			_ = json.Unmarshal(body, &data)
 			receivedName = data["name"]
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"meta": {"serverTime": "2024-01-01T00:00:00Z"}}`))
+			_, _ = w.Write([]byte(`{"meta": {"serverTime": "2024-01-01T00:00:00Z"}}`))
 		}))
 		defer server.Close()
 
@@ -744,7 +749,7 @@ func TestDeleteWhitelistUser(t *testing.T) {
 				t.Errorf("expected DELETE method, got %s", r.Method)
 			}
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"meta": {"serverTime": "2024-01-01T00:00:00Z"}}`))
+			_, _ = w.Write([]byte(`{"meta": {"serverTime": "2024-01-01T00:00:00Z"}}`))
 		}))
 		defer server.Close()
 

@@ -46,7 +46,7 @@ var serverinfoCmd = &cobra.Command{
 			table = append(table, []string{setting.Name, setting.Type, fmt.Sprintf("%v", setting.Value)})
 		}
 
-		pterm.DefaultTable.WithHasHeader().WithBoxed().WithData(table).Render()
+		_ = pterm.DefaultTable.WithHasHeader().WithBoxed().WithData(table).Render()
 
 		return nil
 	},
@@ -70,7 +70,7 @@ var serverstatsCmd = &cobra.Command{
 			{"Animals", fmt.Sprintf("%d", resp.Data.Animals)},
 			{"Zombies", fmt.Sprintf("%d", resp.Data.Hostiles)},
 		}
-		pterm.DefaultTable.WithBoxed().WithData(table).Render()
+		_ = pterm.DefaultTable.WithBoxed().WithData(table).Render()
 
 		return nil
 	},
@@ -100,7 +100,7 @@ var serverprefsCmd = &cobra.Command{
 			})
 		}
 
-		pterm.DefaultTable.WithHasHeader().WithBoxed().WithData(table).Render()
+		_ = pterm.DefaultTable.WithHasHeader().WithBoxed().WithData(table).Render()
 
 		return nil
 	},
