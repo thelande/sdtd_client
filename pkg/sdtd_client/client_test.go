@@ -28,8 +28,8 @@ import (
 )
 
 var (
-	canonicalTokenName = http.CanonicalHeaderKey("X-SDTD-API-TOKENNAME")
-	canonicalSecretKey = http.CanonicalHeaderKey("X-SDTD-API-SECRET")
+	tokenNameKey = "X-SDTD-API-TOKENNAME"
+	secretKey    = "X-SDTD-API-SECRET"
 )
 
 func TestNewSDTDClient(t *testing.T) {
@@ -98,16 +98,16 @@ func TestGetHeaders(t *testing.T) {
 	if headers.Get("Accept") != "application/json" {
 		t.Errorf("expected Accept=application/json, got %s", headers.Get("Accept"))
 	}
-	// Check using the exact key name as set in GetHeaders()
-	if len(headers[canonicalTokenName]) == 0 {
-		t.Error("expected x-sdtd-apitokenname header to be set")
-	} else if headers[canonicalTokenName][0] != "testToken" {
-		t.Errorf("expected x-sdtd-apitokenname=testToken, got %s", headers[canonicalTokenName][0])
+	// Check using the exact key name as set in GetHeaders() - http.Header lookup is case-insensitive
+	if len(headers[tokenNameKey]) == 0 {
+		t.Error("expected X-SDTD-API-TOKENNAME header to be set")
+	} else if headers[tokenNameKey][0] != "testToken" {
+		t.Errorf("expected X-SDTD-API-TOKENNAME=testToken, got %s", headers[tokenNameKey][0])
 	}
-	if len(headers[canonicalSecretKey]) == 0 {
-		t.Error("expected x-sdtd-api-secret header to be set")
-	} else if headers[canonicalSecretKey][0] != "testSecret" {
-		t.Errorf("expected x-sdtd-api-secret=testSecret, got %s", headers[canonicalSecretKey][0])
+	if len(headers[secretKey]) == 0 {
+		t.Error("expected X-SDTD-API-SECRET header to be set")
+	} else if headers[secretKey][0] != "testSecret" {
+		t.Errorf("expected X-SDTD-API-SECRET=testSecret, got %s", headers[secretKey][0])
 	}
 }
 
