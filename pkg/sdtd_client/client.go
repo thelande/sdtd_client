@@ -186,7 +186,7 @@ func (c *SDTDClient) Do(method string, path string, params *url.Values, data []b
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
