@@ -3,7 +3,7 @@ module github.com/thelande/sdtd_client
 go 1.26.0
 
 require (
-	github.com/prometheus/common v0.72.1
+	github.com/prometheus/common v0.73.1
 	github.com/pterm/pterm v0.12.84
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/viper v1.21.0
